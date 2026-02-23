@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "p2p-peft-fl"
+version = "0.1.0"
+description = "Gossip/Epidemic P2P federated PEFT (LoRA) simulator for HF text classification"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+p2p-peft-fl = "p2p_peft_fl.cli:main"
