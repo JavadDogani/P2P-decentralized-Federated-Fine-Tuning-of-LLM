@@ -66,7 +66,7 @@ python -m p2p_peft_fl.cli \
   --max_train_samples 2000 \
   --max_eval_samples 1000
 ```
-This fine-tunes `bert-base-uncased` and took 2.5–4 minutes on a shared CPU-only machine in our tests. The settings are sized to finish quickly, not to converge: per-node accuracy after 3 rounds stayed near chance (0.49–0.53 on SST-2) in our runs, so increase `--rounds` / `--local_steps` for real experiments. For SST-2 the GLUE validation split (872 sentences) serves as the test set.
+This fine-tunes `bert-base-uncased` and took 2.5–4 minutes on a shared CPU-only machine in our tests. It is a smoke run sized to finish quickly, not to train a useful model: increase `--rounds` and `--local_steps` for real experiments. For SST-2 the GLUE validation split (872 sentences) serves as the test set.
 
 ### 4) View logs
 Each run prints per-round, per-node accuracy/loss to the console and writes a JSONL event log to `runs/<run_id>/events.jsonl` (or `--run_dir`). Event types: `run_start` (with the full config), `node_init`, `topology`, `round_start`, `local_train`, `messages`, `eval`, `round_end`, `run_end`.
