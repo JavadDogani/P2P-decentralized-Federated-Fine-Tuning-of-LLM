@@ -2,7 +2,8 @@ from __future__ import annotations
 import argparse
 import os
 import time
-from typing import Dict, List
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import torch
 from torch.utils.data import DataLoader
@@ -23,7 +24,7 @@ from p2p_peft_fl.training.aggregation import (
     sparsify_topk, mean_aggregate, wlora_aggregate, dlora_aggregate
 )
 
-def parse_args() -> ExperimentConfig:
+def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="P2P Federated PEFT (LoRA) simulator")
     # data/model
     p.add_argument("--model", type=str, default=ExperimentConfig.model)
@@ -65,8 +66,11 @@ def parse_args() -> ExperimentConfig:
     # logging
     p.add_argument("--run_dir", type=str, default=None)
     p.add_argument("--log_every", type=int, default=ExperimentConfig.log_every)
+    return p
 
-    a = p.parse_args()
+def parse_args(argv: Optional[Sequence[str]] = None) -> ExperimentConfig:
+    """Parse CLI arguments (``sys.argv[1:]`` when ``argv`` is None) into a config."""
+    a = build_parser().parse_args(argv)
     cfg = ExperimentConfig(**vars(a))
     cfg.agg = cfg.peft  # align naming
     return cfg
@@ -79,8 +83,21 @@ def pick_device(device: str) -> torch.device:
     # auto
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def main():
-    cfg = parse_args()
+@dataclass
+class RunResult:
+    """What :func:`run_experiment` returns (the same information is in ``events.jsonl``)."""
+    run_dir: str
+    nodes: List[Node]
+    evals: List[Dict[str, Any]] = field(default_factory=list)  # one record per (round, node)
+
+def run_experiment(cfg: ExperimentConfig, data_loader: Optional[Callable[..., Any]] = None) -> RunResult:
+    """Run the full P2P federated PEFT simulation described by ``cfg``.
+
+    ``data_loader`` defaults to :func:`load_text_dataset` (which downloads the dataset from
+    the Hugging Face Hub); a callable with the same signature and return value can be
+    passed to run on local data, e.g. in tests. ``cfg.model`` may be a local checkpoint path.
+    """
+    data_loader = data_loader or load_text_dataset
     seed_everything(cfg.seed)
 
     device = pick_device(cfg.device)
@@ -97,7 +114,7 @@ def main():
     logger = RunLogger(run_dir, cfg)
 
     # Load dataset + tokenizer
-    tok_train, tok_test, tokenizer, num_labels = load_text_dataset(
+    tok_train, tok_test, tokenizer, num_labels = data_loader(
         dataset=cfg.dataset,
         model_id=model_id_preview,
         max_length=cfg.max_length,
@@ -138,6 +155,7 @@ def main():
 
     # State for dlora EMA
     ema_state: Dict[int, Dict[str, torch.Tensor] | None] = {i: None for i in range(cfg.nodes)}
+    evals: List[Dict[str, Any]] = []
 
     # Main rounds
     for r in range(cfg.rounds):
@@ -182,12 +200,17 @@ def main():
         for nd in nodes:
             ev = eval_loop(nd.model, nd.eval_loader, device=device)
             logger.event("eval", round=r, node=nd.node_id, **ev)
+            evals.append({"round": r, "node": nd.node_id, **ev})
             print(f"  node={nd.node_id} acc={ev['acc']:.4f} loss={ev['loss']:.4f}")
 
         logger.event("round_end", round=r)
 
     logger.close()
     print(f"\n[done] run_dir={run_dir}")
+    return RunResult(run_dir=run_dir, nodes=nodes, evals=evals)
+
+def main(argv: Optional[Sequence[str]] = None) -> None:
+    run_experiment(parse_args(argv))
 
 if __name__ == "__main__":
     main()

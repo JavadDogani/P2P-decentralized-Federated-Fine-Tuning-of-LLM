@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Tuple
-from datasets import load_dataset, DatasetDict
+from datasets import Dataset, DatasetDict, load_dataset
 from transformers import AutoTokenizer
 
 @dataclass(frozen=True)
@@ -53,19 +53,23 @@ def load_text_dataset(dataset: str, model_id: str, max_length: int,
 
     tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
 
+    tok_train, tok_test, num_labels = tokenize_splits(spec, train_ds, test_ds, tokenizer, max_length)
+
+    return tok_train, tok_test, tokenizer, num_labels
+
+def tokenize_splits(spec: DatasetSpec, train_ds: Dataset, test_ds: Dataset, tokenizer, max_length: int):
+    """Tokenize already-selected train/test splits and rename the label column to ``labels``.
+
+    Returns ``(tok_train, tok_test, num_labels)``. Split out of :func:`load_text_dataset`
+    so the same preprocessing can be applied to local (e.g. synthetic) datasets.
+    """
     def _join_text(ex):
         if len(spec.text_cols) == 1:
             return ex[spec.text_cols[0]]
         # For future multi-field datasets
         return " ".join(str(ex[c]) for c in spec.text_cols)
 
-    def tokenize_fn(batch):
-        texts = [_join_text(ex) for ex in batch]
-        return tokenizer(texts, truncation=True, max_length=max_length)
-
-    # datasets.map can batch dicts; we convert to list-of-examples pattern:
     def map_tokenize(ds):
-        # create list-of-examples view for speed
         return ds.map(
             lambda ex: tokenizer(_join_text(ex), truncation=True, max_length=max_length),
             batched=False,
@@ -81,4 +85,4 @@ def load_text_dataset(dataset: str, model_id: str, max_length: int,
 
     num_labels = int(max(tok_train["labels"])) + 1
 
-    return tok_train, tok_test, tokenizer, num_labels
+    return tok_train, tok_test, num_labels
