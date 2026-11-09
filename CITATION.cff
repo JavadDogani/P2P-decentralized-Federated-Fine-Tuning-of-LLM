@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata from this file."
+type: software
+title: "p2p-peft-fl: Gossip / Epidemic P2P Federated PEFT for Text Classification"
+abstract: >-
+  A single-process simulator for peer-to-peer (serverless) federated learning
+  that fine-tunes Transformer encoders (BERT / ALBERT / RoBERTa) on text
+  classification datasets (AG News / SST-2 / IMDB) with LoRA adapters,
+  exchanging only adapter weights over ring, random, fully-connected or grid
+  topologies with gossip or epidemic message passing, mean / wlora / dlora
+  adapter aggregation, and Dirichlet non-IID partitioning.
+authors:
+  - family-names: Dogani
+    given-names: Javad
+    affiliation: IMDEA Networks Institute
+version: 0.1.0
+license: MIT
+repository-code: "https://github.com/JavadDogani/P2P-decentralized-Federated-Fine-Tuning-of-LLM"
+keywords:
+  - federated learning
+  - decentralized learning
+  - peer-to-peer
+  - gossip
+  - parameter-efficient fine-tuning
+  - LoRA
+  - transformers
