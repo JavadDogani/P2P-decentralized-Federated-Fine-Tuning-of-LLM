@@ -109,19 +109,18 @@ def tiny_classifier(model_type: str):
     [
         "bert",
         "roberta",
-        pytest.param("albert", marks=pytest.mark.xfail(
-            strict=True, raises=ValueError,
-            reason="Known issue: PEFT has no default LoRA target modules for ALBERT and PeftSpec.target_modules "
-            "is None, so `--model albert` fails in attach_lora.")),
-        pytest.param("distilbert", marks=pytest.mark.xfail(
-            strict=True, raises=ValueError,
-            reason="Known issue: PEFT has no default LoRA target modules for DistilBERT and "
-            "PeftSpec.target_modules is None, so `--model distilbert` fails in attach_lora.")),
+        "albert",
+        "distilbert",
     ],
 )
 def test_attach_lora_with_default_targets(model_type):
     peft_model = attach_lora(tiny_classifier(model_type), PeftSpec())
-    assert any("lora_A" in name for name, _ in peft_model.named_parameters())
+    lora = [name for name, _ in peft_model.named_parameters() if "lora_A" in name]
+    assert lora
+    if model_type == "distilbert":
+        assert all("q_lin" in n or "v_lin" in n for n in lora)
+    elif model_type == "albert":
+        assert all("query" in n or "value" in n for n in lora)
 
 
 def test_adapter_state_roundtrip(tiny_model_dir):

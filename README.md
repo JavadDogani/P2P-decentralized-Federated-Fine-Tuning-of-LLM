@@ -5,7 +5,7 @@
 [![Python 3.10 | 3.11 | 3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](pyproject.toml)
 
 A **single-process simulator** for **peer-to-peer (serverless) federated learning** that:
-- trains **Transformer encoders** (BERT / RoBERTa, or any Hugging Face model id or local checkpoint for which PEFT can infer LoRA target modules; see [Known limitations](#known-limitations) for ALBERT) on **AG News / SST-2 / IMDB**
+- trains **Transformer encoders** (BERT / ALBERT / RoBERTa / DistilBERT, or any Hugging Face model id or local checkpoint for which PEFT can infer LoRA target modules) on **AG News / SST-2 / IMDB**
 - uses **PEFT adapters** (LoRA) and **communicates only adapter weights** (the LoRA matrices plus the trainable classification head)
 - supports **P2P topologies** (ring / random / fully-connected / grid)
 - supports **P2P mixing protocols**:
@@ -132,7 +132,6 @@ ruff check .
 The suite runs fully offline in a few seconds on CPU: end-to-end runs use a tiny randomly initialised BERT saved to a temporary directory and synthetic sentences, so nothing is downloaded. It covers topology construction (degree, symmetry, connectivity), gossip vs epidemic message counts, the aggregation rules and top-k sparsification, Dirichlet partitioning (every sample assigned exactly once, skew increasing as α decreases), tokenization, adapter export/import, argument parsing, and complete simulation runs (including consensus under fully-connected epidemic averaging and seed reproducibility). The known limitations below are recorded as strict `xfail` tests. CI runs the suite on Python 3.10, 3.11 and 3.12 with the CPU-only PyTorch wheel.
 
 ## Known limitations
-- `--model albert` and `--model distilbert` currently fail when the LoRA adapter is attached: `PeftSpec.target_modules` is `None`, and PEFT has no default target modules for these architectures. BERT and RoBERTa work.
 - A 2-node `ring` lists the single neighbor twice, so `epidemic` delivers each message twice.
 - The `random` topology only enforces a minimum degree; it is not guaranteed to be connected (e.g. 9 nodes, degree 2, seed 0 gives two components).
 - With a very small `--non_iid_alpha` and many nodes, a node can receive no training samples, which currently stops the run with an error.

@@ -13,6 +13,19 @@ class PeftSpec:
     bias: str = "none"  # none | all | lora_only
     target_modules: Optional[list[str]] = None  # if None: PEFT will infer common modules
 
+# LoRA targets for architectures PEFT has no defaults for (query/value projections, as PEFT uses
+# for BERT and RoBERTa). Other architectures keep PEFT's own defaults.
+DEFAULT_TARGET_MODULES = {
+    "albert": ["query", "value"],
+    "distilbert": ["q_lin", "v_lin"],
+}
+
+
+def default_target_modules(model) -> Optional[list[str]]:
+    model_type = getattr(getattr(model, "config", None), "model_type", None)
+    return DEFAULT_TARGET_MODULES.get(model_type)
+
+
 def attach_lora(model, spec: PeftSpec):
     cfg = LoraConfig(
         r=spec.r,
@@ -20,7 +33,7 @@ def attach_lora(model, spec: PeftSpec):
         lora_dropout=spec.dropout,
         bias=spec.bias,
         task_type="SEQ_CLS",
-        target_modules=spec.target_modules,
+        target_modules=spec.target_modules or default_target_modules(model),
     )
     peft_model = get_peft_model(model, cfg)
     peft_model.print_trainable_parameters()
