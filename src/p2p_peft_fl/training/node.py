@@ -25,7 +25,7 @@ class Node:
         # Only trainable params (adapters)
         params = [p for p in self.model.parameters() if p.requires_grad]
         self.optim = AdamW(params, lr=self.lr, weight_decay=self.weight_decay)
-        self.scaler = torch.cuda.amp.GradScaler(enabled=(self.fp16 and self.device.type == "cuda"))
+        self.scaler = torch.amp.GradScaler("cuda", enabled=(self.fp16 and self.device.type == "cuda"))
 
     def local_train(self, steps: int, log_every: int = 10) -> Dict[str, float]:
         self.model.train()
@@ -41,7 +41,7 @@ class Node:
             batch = {k: v.to(self.device) for k, v in batch.items()}
 
             self.optim.zero_grad(set_to_none=True)
-            with torch.cuda.amp.autocast(enabled=(self.fp16 and self.device.type == "cuda")):
+            with torch.autocast(device_type="cuda", enabled=(self.fp16 and self.device.type == "cuda")):
                 out = self.model(**batch)
                 loss = out.loss
 
