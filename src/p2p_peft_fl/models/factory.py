@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Tuple
 from transformers import AutoModelForSequenceClassification
 
 MODEL_ALIASES = {

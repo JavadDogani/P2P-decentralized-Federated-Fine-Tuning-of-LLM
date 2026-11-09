@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, List
 import torch
 
 AdapterState = Dict[str, torch.Tensor]

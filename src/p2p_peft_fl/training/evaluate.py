@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Tuple
+from typing import Dict
 import torch
 
 @torch.no_grad()

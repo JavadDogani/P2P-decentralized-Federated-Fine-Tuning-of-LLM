@@ -1,9 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict
 import torch
 from torch.utils.data import DataLoader
-from transformers import DataCollatorWithPadding
 from torch.optim import AdamW
 
 from p2p_peft_fl.peft.factory import get_adapter_state, set_adapter_state
