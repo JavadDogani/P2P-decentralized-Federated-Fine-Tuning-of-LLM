@@ -10,7 +10,7 @@ import pytest
 import torch
 from datasets import Dataset
 from torch.utils.data import DataLoader
-from transformers import DataCollatorWithPadding
+from transformers import AutoConfig, AutoModelForSequenceClassification, DataCollatorWithPadding
 
 from p2p_peft_fl.cli import parse_args, pick_device
 from p2p_peft_fl.config import ExperimentConfig
@@ -87,6 +87,41 @@ def test_lora_adapter_contains_only_lora_and_head(tiny_model_dir):
     n_adapter = sum(v.numel() for v in state.values())
     n_total = sum(p.numel() for p in peft_model.parameters())
     assert n_adapter < 0.5 * n_total
+
+
+TINY = dict(vocab_size=64, hidden_size=16, num_hidden_layers=1, num_attention_heads=2, intermediate_size=32,
+            max_position_embeddings=64, num_labels=2)
+
+
+def tiny_classifier(model_type: str):
+    if model_type == "distilbert":
+        cfg = AutoConfig.for_model("distilbert", vocab_size=64, dim=16, n_layers=1, n_heads=2, hidden_dim=32,
+                                   max_position_embeddings=64, num_labels=2)
+    elif model_type == "albert":
+        cfg = AutoConfig.for_model("albert", embedding_size=8, **TINY)
+    else:
+        cfg = AutoConfig.for_model(model_type, **TINY)
+    return AutoModelForSequenceClassification.from_config(cfg)
+
+
+@pytest.mark.parametrize(
+    "model_type",
+    [
+        "bert",
+        "roberta",
+        pytest.param("albert", marks=pytest.mark.xfail(
+            strict=True, raises=ValueError,
+            reason="Known issue: PEFT has no default LoRA target modules for ALBERT and PeftSpec.target_modules "
+            "is None, so `--model albert` fails in attach_lora.")),
+        pytest.param("distilbert", marks=pytest.mark.xfail(
+            strict=True, raises=ValueError,
+            reason="Known issue: PEFT has no default LoRA target modules for DistilBERT and "
+            "PeftSpec.target_modules is None, so `--model distilbert` fails in attach_lora.")),
+    ],
+)
+def test_attach_lora_with_default_targets(model_type):
+    peft_model = attach_lora(tiny_classifier(model_type), PeftSpec())
+    assert any("lora_A" in name for name, _ in peft_model.named_parameters())
 
 
 def test_adapter_state_roundtrip(tiny_model_dir):
