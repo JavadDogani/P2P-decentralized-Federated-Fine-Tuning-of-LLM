@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,8 +7,46 @@ name = "p2p-peft-fl"
 version = "0.1.0"
 description = "Gossip/Epidemic P2P federated PEFT (LoRA) simulator for HF text classification"
 readme = "README.md"
-requires-python = ">=3.9"
-dependencies = []
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Javad Dogani" }]
+requires-python = ">=3.10"
+keywords = [
+    "federated-learning",
+    "peer-to-peer",
+    "gossip",
+    "lora",
+    "peft",
+    "transformers",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "torch>=2.1",
+    "transformers>=4.41",
+    "datasets>=2.19",
+    "peft>=0.11",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "ruff>=0.6",
+]
+
+[project.urls]
+Repository = "https://github.com/JavadDogani/P2P-decentralized-Federated-Fine-Tuning-of-LLM"
+
+[project.scripts]
+p2p-peft-fl = "p2p_peft_fl.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -16,5 +54,14 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[project.scripts]
-p2p-peft-fl = "p2p_peft_fl.cli:main"
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+# Keep to the classic pyflakes/pycodestyle error set; formatting is not enforced.
+select = ["E4", "E7", "E9", "F"]
